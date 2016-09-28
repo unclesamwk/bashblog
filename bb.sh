@@ -7,6 +7,7 @@
 
 # Global variables
 # It is recommended to perform a 'rebuild' after changing any of this in the code
+EDITOR="nano"
 
 # Config file. Any settings "key=value" written there will override the
 # global_variables defaults. Useful to avoid editing bb.sh and having to deal
@@ -62,7 +63,7 @@ global_variables() {
     # Blog generated files
     # index page of blog (it is usually good to use "index.html" here)
     index_file="index.html"
-    number_of_index_articles="8"
+    number_of_index_articles="2"
     # global archive
     archive_index="all_posts.html"
     tags_index="all_tags.html"
@@ -85,11 +86,11 @@ global_variables() {
     # personalized header and footer (only if you know what you're doing)
     # DO NOT name them .header.html, .footer.html or they will be overwritten
     # leave blank to generate them, recommended
-    header_file=""
-    footer_file=""
+    header_file="header.html"
+    footer_file="footer.html"
     # extra content to add just after we open the <body> tag
     # and before the actual blog content
-    body_begin_file=""
+    body_begin_file="body.html"
     # CSS files to include on every page, f.ex. css_include=('main.css' 'blog.css')
     # leave empty to use generated
     css_include=()
@@ -413,44 +414,41 @@ create_html_page() {
     # html, head
     {
         cat ".header.html"
-        echo "<title>$title</title>"
+
         google_analytics
         twitter_card "$content" "$title"
         echo "</head><body>"
         # stuff to add before the actual body content
         [[ -n $body_begin_file ]] && cat "$body_begin_file"
-        # body divs
-        echo '<div id="divbodyholder">'
-        echo '<div class="headerholder"><div class="header">'
         # blog title
-        echo '<div id="title">'
-        cat .title.html
-        echo '</div></div></div>' # title, header, headerholder
-        echo '<div id="divbody"><div class="content">'
+        echo "<div class="blog-header">"
+        echo "<h1 class="blog-title">$title</h1>"
+        echo "<p class=\"lead blog-description\">"$global_description"</p>"
+	echo '<div class="row">'
+        echo '<div class="col-sm-8 blog-main">'
 
         file_url=${filename#./}
         file_url=${file_url%.rebuilt} # Get the correct URL when rebuilding
         # one blog entry
         if [[ $index == no ]]; then
             echo '<!-- entry begin -->' # marks the beginning of the whole post
-            echo "<h3><a class=\"ablack\" href=\"$file_url\">"
+            #echo "<h3><a class=\"ablack\" href=\"$file_url\">"
+            echo "<div class=\"blog-post\">"
             # remove possible <p>'s on the title because of markdown conversion
             title=${title//<p>/}
             title=${title//<\/p>/}
-            echo "$title"
-            echo '</a></h3>'
+            echo "<h2 class=\"blog-post-title\">$title</h2>"
             if [[ -z $timestamp ]]; then
                 echo "<!-- $date_inpost: #$(LC_ALL=$date_locale date +"$date_format_timestamp")# -->"
             else
                 echo "<!-- $date_inpost: #$(LC_ALL=$date_locale date +"$date_format_timestamp" --date="$timestamp")# -->"
             fi
             if [[ -z $timestamp ]]; then
-                echo -n "<div class=\"subtitle\">$(LC_ALL=$date_locale date +"$date_format")"
+                echo -n "<p class=\"blog-post-meta\">$(LC_ALL=$date_locale date +"$date_format")<a href=\"#\"> $author</a></p>"
             else
-                echo -n "<div class=\"subtitle\">$(LC_ALL=$date_locale date +"$date_format" --date="$timestamp")"
+                echo -n "<p class=\"blog-post-meta\">$(LC_ALL=$date_locale date +"$date_format" --date="$timestamp")<a href=\"#\"> $author</a></p>"
             fi
-            [[ -n $author ]] && echo -e " &mdash; \n$author"
-            echo "</div>"
+
             echo '<!-- text begin -->' # This marks the text body, after the title, date...
         fi
         cat "$content" # Actual content
@@ -463,6 +461,7 @@ create_html_page() {
         fi
 
         echo '</div>' # content
+        echo '</div><!-- /.blog-post -->' # content
 
         # Add disqus commments except for index and all_posts pages
         [[ $index == no ]] && disqus_body
